@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Register</title>
+
+<style>
+
+body{
+
+    margin: 0;
+    height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-family: Arial;
+
+    background: linear-gradient(135deg,#020617,#111827);
+
+}
+
+.register-box{
+
+    width: 350px;
+
+    padding: 40px;
+
+    border-radius: 20px;
+
+    background: rgba(255,255,255,0.08);
+
+    backdrop-filter: blur(10px);
+
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+
+}
+
+h1{
+
+    text-align: center;
+
+    color: #60a5fa;
+
+    margin-bottom: 30px;
+
+}
+
+input{
+
+    width: 100%;
+
+    padding: 14px;
+
+    margin-top: 15px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: rgba(255,255,255,0.1);
+
+    color: white;
+
+}
+
+button{
+
+    width: 100%;
+
+    padding: 14px;
+
+    margin-top: 20px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: #2563eb;
+
+    color: white;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+}
+
+button:hover{
+
+    opacity: 0.9;
+
+}
+
+p{
+
+    text-align: center;
+
+    margin-top: 20px;
+
+    color: #cbd5e1;
+
+}
+
+a{
+
+    color: #60a5fa;
+
+    text-decoration: none;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="register-box">
+
+    <h1>Create Account</h1>
+
+    <input type="text" id="name" placeholder="Enter Name">
+
+    <input type="email" id="email" placeholder="Enter Email">
+
+    <input type="password" id="password" placeholder="Enter Password">
+
+    <button onclick="registerUser()">
+        Register
+    </button>
+
+    <p>
+        Already have an account?
+        <a href="login.html">Login</a>
+    </p>
+
+</div>
+
+<script>
+
+async function registerUser(){
+
+    const name =
+    document.getElementById("name").value;
+
+    const email =
+    document.getElementById("email").value;
+
+    const password =
+    document.getElementById("password").value;
+
+    const response = await fetch(
+
+        "http://localhost:5000/api/auth/register",
+
+        {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
+            },
+
+            body: JSON.stringify({
+
+                name,
+                email,
+                password
+
+            })
+
+        }
+
+    );
+
+    const data = await response.json();
+
+    if(response.status === 201){
+
+        alert("Registration Successful");
+
+        // Auto Login
+
+        const loginResponse = await fetch(
+
+            "http://localhost:5000/api/auth/login",
+
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type": "application/json"
+
+                },
+
+                body: JSON.stringify({
+
+                    email,
+                    password
+
+                })
+
+            }
+
+        );
+
+        const loginData = await loginResponse.json();
+
+        localStorage.setItem(
+            "token",
+            loginData.token
+        );
+
+        window.location.replace("index.html");
+
+    }else{
+
+        alert(data.message);
+
+    }
+
+}
+
+</script>
+
+</body>
+
+</html>

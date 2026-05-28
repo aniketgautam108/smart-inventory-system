@@ -1,72 +1,161 @@
 const express = require("express");
+
 const router = express.Router();
 
 const Product = require("../models/Product");
 
+const authMiddleware = require("../middleware/authMiddleware");
 
-// Add Product
-router.post("/", async (req, res) => {
+
+// =========================
+// ADD PRODUCT
+// =========================
+
+router.post("/", authMiddleware, async (req, res) => {
+
     try {
-        const product = new Product(req.body);
+
+        const product = new Product({
+
+            ...req.body,
+
+            user: req.user.id
+
+        });
+
         const savedProduct = await product.save();
 
         res.status(201).json(savedProduct);
+
     } catch (error) {
-        res.status(500).json({ message: error.message });
+
+        res.status(500).json({
+            message: error.message
+        });
+
     }
+
 });
 
 
-// Get All Products
-router.get("/", async (req, res) => {
+// =========================
+// GET ALL PRODUCTS
+// =========================
+
+router.get("/", authMiddleware, async (req, res) => {
+
     try {
-        const products = await Product.find();
+
+        const products = await Product.find({
+            user: req.user.id
+        });
 
         res.json(products);
+
     } catch (error) {
-        res.status(500).json({ message: error.message });
+
+        res.status(500).json({
+            message: error.message
+        });
+
     }
+
 });
 
 
-// Update Product
-router.put("/:id", async (req, res) => {
+// =========================
+// SEARCH PRODUCT
+// =========================
+
+router.get("/search/:name", authMiddleware, async (req, res) => {
+
     try {
-        const updatedProduct = await Product.findByIdAndUpdate(
-            req.params.id,
+
+        const products = await Product.find({
+
+            user: req.user.id,
+
+            productName: {
+
+                $regex: req.params.name,
+
+                $options: "i"
+
+            }
+
+        });
+
+        res.json(products);
+
+    } catch (error) {
+
+        res.status(500).json({
+            message: error.message
+        });
+
+    }
+
+});
+
+
+// =========================
+// LOW STOCK PRODUCTS
+// =========================
+
+router.get("/low-stock", authMiddleware, async (req, res) => {
+
+    try {
+
+        const products = await Product.find({
+
+            user: req.user.id,
+
+            quantity: { $lt: 5 }
+
+        });
+
+        res.json(products);
+
+    } catch (error) {
+
+        res.status(500).json({
+            message: error.message
+        });
+
+    }
+
+});
+
+
+// =========================
+// UPDATE PRODUCT
+// =========================
+
+router.put("/:id", authMiddleware, async (req, res) => {
+
+    try {
+
+        const updatedProduct = await Product.findOneAndUpdate(
+
+            {
+
+                _id: req.params.id,
+
+                user: req.user.id
+
+            },
+
             req.body,
-            { new: true }
+
+            {
+
+                new: true
+
+            }
+
         );
 
         res.json(updatedProduct);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-
-// Delete Product
-router.delete("/:id", async (req, res) => {
-    try {
-        await Product.findByIdAndDelete(req.params.id);
-
-        res.json({ message: "Product Deleted Successfully" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-router.get("/search/:name", async (req, res) => {
-
-    try {
-
-        const products = await Product.find({
-            productName: {
-                $regex: req.params.name,
-                $options: "i"
-            }
-        });
-
-        res.json(products);
 
     } catch (error) {
 
@@ -77,33 +166,28 @@ router.get("/search/:name", async (req, res) => {
     }
 
 });
-router.get("/low-stock", async (req, res) => {
+
+
+// =========================
+// DELETE PRODUCT
+// =========================
+
+router.delete("/:id", authMiddleware, async (req, res) => {
 
     try {
 
-        const products = await Product.find({
-            quantity: { $lt: 5 }
+        await Product.findOneAndDelete({
+
+            _id: req.params.id,
+
+            user: req.user.id
+
         });
-
-        res.json(products);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
-    }
-
-});
-router.delete("/:id", async (req, res) => {
-
-    try {
-
-        await Product.findByIdAndDelete(req.params.id);
 
         res.json({
-            message: "Product Deleted"
+
+            message: "Product Deleted Successfully"
+
         });
 
     } catch (error) {
@@ -115,30 +199,6 @@ router.delete("/:id", async (req, res) => {
     }
 
 });
-router.put("/:id", async (req, res) => {
 
-    try {
-
-        const updatedProduct = await Product.findByIdAndUpdate(
-
-            req.params.id,
-
-            req.body,
-
-            { returnDocument: "after" }
-
-        );
-
-        res.json(updatedProduct);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
-    }
-
-});
 
 module.exports = router;
