@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Smart Inventory Management System</title>
+
+    <style>
+
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body{
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            padding: 30px;
+        }
+
+        h1{
+            margin-bottom: 20px;
+            color: #4da3ff;
+        }
+
+        .dashboard{
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .card{
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            width: 220px;
+            border-left: 5px solid #4da3ff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .card h2{
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .inputs{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input{
+            padding: 12px;
+            width: 220px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+            background: #1e1e1e;
+            color: white;
+        }
+
+        button{
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            background-color: #4da3ff;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover{
+            background-color: #2d8cff;
+        }
+
+        .product{
+            background: #1e1e1e;
+            padding: 20px;
+            margin-top: 15px;
+            border-radius: 12px;
+            border-left: 5px solid #4da3ff;
+        }
+
+        .product h3{
+            margin-bottom: 10px;
+            color: #4da3ff;
+        }
+
+        .product p{
+            margin: 8px 0;
+        }
+
+        .btn-group{
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .low-stock{
+            color: red;
+            font-weight: bold;
+        }
+
+        @media(max-width: 768px){
+
+            .inputs{
+                flex-direction: column;
+            }
+
+            input{
+                width: 100%;
+            }
+
+            button{
+                width: 100%;
+            }
+
+            .card{
+                width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <h1>Smart Inventory Management System</h1>
+
+    <div class="dashboard">
+
+        <div class="card">
+            <h2 id="totalProducts">0</h2>
+            <p>Total Products</p>
+        </div>
+
+        <div class="card">
+            <h2 id="totalValue">₹0</h2>
+            <p>Total Inventory Value</p>
+        </div>
+
+    </div>
+
+    <div class="inputs">
+
+        <input 
+        type="text" 
+        id="search" 
+        placeholder="Search Product"
+        onkeyup="searchProduct()"
+        >
+
+        <input 
+        type="text" 
+        id="name" 
+        placeholder="Product Name"
+        >
+
+        <input 
+        type="number" 
+        id="quantity" 
+        placeholder="Quantity"
+        >
+
+        <input 
+        type="number" 
+        id="price" 
+        placeholder="Price"
+        >
+
+        <button onclick="addProduct()">
+            Add Product
+        </button>
+
+    </div>
+
+    <div id="products"></div>
+
+<script>
+
+async function fetchProducts(){
+
+    const response = await fetch(
+        "http://localhost:5000/api/products"
+    );
+
+    const data = await response.json();
+
+    displayProducts(data);
+
+}
+
+function displayProducts(data){
+
+    const productsDiv = document.getElementById("products");
+
+    productsDiv.innerHTML = "";
+
+    document.getElementById("totalProducts").innerText =
+    data.length;
+
+    let totalValue = 0;
+
+    data.forEach(product => {
+
+        totalValue += product.price * product.quantity;
+
+        productsDiv.innerHTML += `
+
+        <div class="product">
+
+            <h3>${product.productName}</h3>
+
+            <p><strong>Quantity:</strong> ${product.quantity}</p>
+
+            <p><strong>Price:</strong> ₹${product.price}</p>
+
+            ${product.quantity < 5 
+            ? "<p class='low-stock'>Low Stock</p>" 
+            : ""}
+
+            <div class="btn-group">
+
+                <button onclick="updateProduct('${product._id}')">
+                    Update Quantity
+                </button>
+
+                <button onclick="deleteProduct('${product._id}')">
+                    Delete
+                </button>
+
+            </div>
+
+        </div>
+
+        `;
+
+    });
+
+    document.getElementById("totalValue").innerText =
+    "₹" + totalValue;
+
+}
+
+async function searchProduct(){
+
+    const searchValue =
+    document.getElementById("search").value;
+
+    if(searchValue === ""){
+
+        fetchProducts();
+        return;
+
+    }
+
+    const response = await fetch(
+
+        `http://localhost:5000/api/products/search/${searchValue}`
+
+    );
+
+    const data = await response.json();
+
+    displayProducts(data);
+
+}
+
+async function addProduct(){
+
+    const productName =
+    document.getElementById("name").value;
+
+    const quantity =
+    document.getElementById("quantity").value;
+
+    const price =
+    document.getElementById("price").value;
+
+    if(!productName || !quantity || !price){
+
+        alert("Please fill all fields");
+        return;
+
+    }
+
+    await fetch(
+
+        "http://localhost:5000/api/products",
+
+        {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+                productName,
+                quantity,
+                price
+
+            })
+
+        }
+
+    );
+
+    document.getElementById("name").value = "";
+    document.getElementById("quantity").value = "";
+    document.getElementById("price").value = "";
+
+    fetchProducts();
+
+}
+
+async function deleteProduct(id){
+
+    await fetch(
+
+        `http://localhost:5000/api/products/${id}`,
+
+        {
+            method: "DELETE"
+        }
+
+    );
+
+    fetchProducts();
+
+}
+
+async function updateProduct(id){
+
+    const newQuantity =
+    prompt("Enter New Quantity");
+
+    if(newQuantity === null || newQuantity === ""){
+        return;
+    }
+
+    await fetch(
+
+        `http://localhost:5000/api/products/${id}`,
+
+        {
+
+            method: "PUT",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+                quantity: newQuantity
+
+            })
+
+        }
+
+    );
+
+    fetchProducts();
+
+}
+
+fetchProducts();
+
+</script>
+
+</body>
+
+</html>
